@@ -7,6 +7,9 @@ no warnings 'experimental';
 use utf8;
 binmode STDOUT, ':utf8';
 
+use adc::adc;
+use adc::05_linux_generic;
+
 =encoding utf-8
 
 =head1 NAME
@@ -29,12 +32,17 @@ This function is ctor.
 
 my $self = self->new();
 
-sub new {
-   my $selft = shift;
+sub new($) {
+   my $self = shift;
+   if (linux_generic->check()) {
+      print linux_generic->get_ips();
+   }
    return bless {}, $self;
 }
 
-1;
+
+
+# 1;
 
 =back
 
