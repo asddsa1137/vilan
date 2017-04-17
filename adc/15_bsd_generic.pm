@@ -19,7 +19,7 @@ use adc::adc;
 
 =cut
 
-package linux_generic;
+package bsd_generic;
 
 =item B<new()>
 
@@ -35,18 +35,18 @@ sub new {
 }
 
 sub check {
-   return `uname -s` =~ "Linux";
+   return `uname -s` =~ m{BSD}i;
 }
 
 sub get_ips {
-   chomp(my @a = `(ip a || ifconfig -a) 2>/dev/null |awk '\$1=="inet"{print}'`);
+   chomp(my @a = `/sbin/ifconfig -a 2>/dev/null |awk '\$1=="inet"{print}'`);
    my %ips;
 
    for (@a) {
       my ($ip, $mask);
 
-      ($ip, $mask) = m{addr:([\d.]+).*mask:([\d.]+)}i unless $ip;
-      ($ip, $mask) = m{inet ([\d.]+)/([\d]+)}i unless $ip;
+      ($ip, $mask) = m{inet ([\d.]+).*netmask ([^ ]+)}i unless $ip;
+
       $ip = "xxx" unless $ip;
 
       $ips{$ip} = adc->mask_to_ip($mask);

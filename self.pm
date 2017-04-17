@@ -7,8 +7,10 @@ no warnings 'experimental';
 use utf8;
 binmode STDOUT, ':utf8';
 
-use adc::adc;
-use adc::05_linux_generic;
+my $_dir = "adc";
+my %_modules;
+eval "use ${_dir}::$_", $_modules{$_} += defined $@ ? 0 : 1 for
+map { s,.*/,,; s/.pm$//r } glob "$_dir/*.pm";
 
 =encoding utf-8
 
@@ -30,19 +32,30 @@ This function is ctor.
 
 =cut
 
-my $self = self->new();
+my %ips = ();
 
 sub new($) {
    my $self = shift;
-   if (linux_generic->check()) {
-      print linux_generic->get_ips();
-   }
+
+   my $prefix;
+   eval "$_\->check()" and $prefix = $_ for (map { s,^\d+_,,r } keys %_modules);
+   exit 2 unless $prefix;
+
+   print "I am $prefix !\n";
+   %ips = eval "$prefix\->get_ips()";
+
    return bless {}, $self;
 }
 
+=item B<get_ips()>
 
+   returns { ip => mask } HASH pointer
 
-# 1;
+=cut
+
+sub get_ips() { return \%ips; }
+
+1;
 
 =back
 

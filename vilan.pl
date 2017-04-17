@@ -7,6 +7,9 @@ no warnings 'experimental';
 use utf8;
 binmode STDOUT, ':utf8';
 
+use self;
+use adc::adc;
+
 =encoding utf-8
 
 =head1 NAME
@@ -33,6 +36,9 @@ unless (my $rc = do $config_file) {
    warn "couldn't do $config_file: $!" unless defined $rc;
    warn "couldn't run $config_file" unless $rc;
 }
+
+my $self = self->new();
+adc->print_ip_mask($self->get_ips());
 
 =head1 FUNCTIONS
 
