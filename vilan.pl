@@ -23,6 +23,17 @@ Here will be some examples of syntax and all parameters
 
 The B<vilan> utility scans network and makes it's topology in digraph format.
 
+=cut 
+
+our %HOSTS;
+#TODO parse arguments [ -c config.pl ]
+my $config_file = './config.pl';
+unless (my $rc = do $config_file) {
+   warn "couldn't parse $config_file: $@" if $@;
+   warn "couldn't do $config_file: $!" unless defined $rc;
+   warn "couldn't run $config_file" unless $rc;
+}
+
 =head1 FUNCTIONS
 
 =over 4
