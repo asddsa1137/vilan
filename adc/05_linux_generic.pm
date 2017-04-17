@@ -39,7 +39,7 @@ sub check {
 }
 
 sub get_ips {
-   chomp(my @a = `(ip a || ifconfig -a) 2>/dev/null |awk '\$1=="inet"{print}'`);
+   chomp(my @a = `(ip a || ifconfig -a) 2>/dev/null |awk '\$1=="inet"{print}' |grep -v 127.0.0.1`);
    my %ips;
 
    for (@a) {
@@ -47,9 +47,18 @@ sub get_ips {
 
       ($ip, $mask) = m{addr:([\d.]+).*mask:([\d.]+)}i unless $ip;
       ($ip, $mask) = m{inet ([\d.]+)/([\d]+)}i unless $ip;
-      $ip = "xxx" unless $ip;
+      return ("xxx") unless $ip;
 
-      $ips{$ip} = adc->mask_to_ip($mask);
+      $mask = adc->ip_to_mask($mask);
+      $ips{$ip} = $mask;
+
+      `nmap -sn $ip\/$mask`;
+      chomp(my @b = `arp -n |grep -v "incomplete" |awk 'NR>1 {print \$1}'`);
+      for (@b) {
+         $ips{$_} = $mask;
+      }
+
+      $ips{$ip} = $mask;
    }
 
    return %ips;
