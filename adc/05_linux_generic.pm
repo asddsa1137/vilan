@@ -43,16 +43,16 @@ sub get_ips {
    my %ips;
 
    for (@a) {
-      my ($ip, $mask);
+      my ($ip, $mask, $mask_for_nmap);
 
       ($ip, $mask) = m{addr:([\d.]+).*mask:([\d.]+)}i unless $ip;
       ($ip, $mask) = m{inet ([\d.]+)/([\d]+)}i unless $ip;
       return ("xxx") unless $ip;
 
-      $mask = common->ip_to_mask($mask);
-      $ips{$ip} = $mask;
+      $mask = common->mask_to_ip($mask);
 
-      `nmap -sn $ip\/$mask`;
+      $mask_for_nmap = common->ip_to_mask($mask);
+      `nmap -sn $ip\/$mask_for_nmap`;
       chomp(my @b = `arp -n |grep -v "incomplete" |awk 'NR>1 {print \$1}'`);
       for (@b) {
          $ips{$_} = $mask;
