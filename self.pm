@@ -36,24 +36,23 @@ my %ips = ();
 
 sub new($) {
    my $self = shift;
+   my %self;
 
    my $prefix;
    eval "$_\->check()" and $prefix = $_ for (map { s,^\d+_,,r } keys %_modules);
    exit 2 unless $prefix;
 
    print "I am $prefix !\n";
-   %ips = eval "$prefix\->get_ips()";
+   %self = %{ eval "$prefix\->get_self()" };
 
-   return bless {}, $self;
+   return bless \%self, $self;
 }
 
-=item B<get_ips()>
+=item B<get_self ()>
 
    returns { ip => mask } HASH pointer
 
 =cut
-
-sub get_ips() { return \%ips; }
 
 1;
 

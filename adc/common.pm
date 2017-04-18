@@ -124,4 +124,11 @@ sub print_ip_mask($\%) {
    printf "Total alive hosts: %s\n",  scalar(keys($_[0]));
 }
 
+sub print_gws($\@) {
+   shift;
+   my @gws = @{+shift};
+   $" = ' ';
+   print "Gateways are:\n@gws\n";
+}
+
 1;

@@ -38,30 +38,36 @@ sub check {
    return `uname -s` =~ "Linux";
 }
 
-sub get_ips {
-   chomp(my @a = `(ip a || ifconfig -a) 2>/dev/null |awk '\$1=="inet"{print}' |grep -v '127.0.0.1'`);
-   my %ips;
+sub get_self {
+   my (%self, %ips);
+   chomp(my @self_addr = `(ip a || ifconfig -a) 2>/dev/null |awk '!/127.0.0.1/ && \$1=="inet"{print}'`);
 
-   for (@a) {
+# find all visible ips
+   for (@self_addr) {
       my ($ip, $mask, $mask_for_nmap);
 
       ($ip, $mask) = m{addr:([\d.]+).*mask:([\d.]+)}i unless $ip;
       ($ip, $mask) = m{inet ([\d.]+)/([\d]+)}i unless $ip;
-      return ("xxx") unless $ip;
+      return {} unless $ip;
 
       $mask = common->mask_to_ip($mask);
 
       $mask_for_nmap = common->ip_to_mask($mask);
       `nmap -sn $ip\/$mask_for_nmap`;
-      chomp(my @b = `arp -n |grep -v "incomplete" |awk 'NR>1 {print \$1}'`);
+      chomp(my @b = `arp -n |awk 'NR>1 && !/incomplete/ {print \$1}'`);
       for (@b) {
          $ips{$_} = $mask;
       }
 
       $ips{$ip} = $mask;
    }
+   $self{ips} = \%ips;
 
-   return %ips;
+# determine default GWs
+   chomp(my @gws = `route -n |awk 'NR>2 && \$2!="0.0.0.0"{print \$2}'`);
+   $self{gws} = \@gws;
+
+   return \%self;
 }
 
 1;

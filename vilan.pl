@@ -38,7 +38,9 @@ unless (my $rc = do $config_file) {
 }
 
 my $self = self->new();
-common->print_ip_mask($self->get_ips());
+
+common->print_ip_mask($self->{ips});
+common->print_gws($self->{gws});
 
 =head1 FUNCTIONS
 
