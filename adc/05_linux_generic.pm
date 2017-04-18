@@ -21,29 +21,16 @@ use adc::common;
 
 package linux_generic;
 
-=item B<new()>
-
-   return: an instance of self object
-
-This function is ctor.
-
-=cut
-
-sub new {
-   my $self = shift;
-   return bless {}, $self;
-}
-
 sub check {
    return `uname -s` =~ "Linux";
 }
 
 sub get_self {
    my (%self, %reachable_ips, %own_ips);
-   chomp(my @self_addr = `(ip a || ifconfig -a) 2>/dev/null |awk '!/127.0.0.1/ && \$1=="inet"{print}'`);
+   chomp(my @self_addrs = `(ip a || ifconfig -a) 2>/dev/null |awk '!/127.0.0.1/ && \$1=="inet"{print}'`);
 
 # find all visible ips
-   for (@self_addr) {
+   for (@self_addrs) {
       my ($ip, $mask, $mask_for_nmap);
 
       ($ip, $mask) = m{addr:([\d.]+).*mask:([\d.]+)}i unless $ip;
@@ -63,7 +50,7 @@ sub get_self {
    $self{own_ips} = \%own_ips;
 
 # determine default GWs
-   chomp(my @gws = `route -n |awk 'NR>2 && \$2!="0.0.0.0"{print \$2}'`);
+   chomp(my @gws = `netstat -rn |awk '\$4~/G/{print \$2}'`);
    $self{gws} = \@gws;
 
    return \%self;

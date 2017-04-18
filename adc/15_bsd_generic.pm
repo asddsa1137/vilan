@@ -21,38 +21,37 @@ use adc::common;
 
 package bsd_generic;
 
-=item B<new()>
-
-   return: an instance of self object
-
-This function is ctor.
-
-=cut
-
-sub new {
-   my $self = shift;
-   return bless {}, $self;
-}
-
 sub check {
    return `uname -s` =~ m{BSD}i;
 }
 
-sub get_ips {
-   chomp(my @a = `/sbin/ifconfig -a 2>/dev/null |awk '\$1=="inet"{print}'`);
-   my %ips;
+sub get_self {
+   chomp(my @self_addrs = `/sbin/ifconfig -a 2>/dev/null |awk '\$1=="inet"{print}'`);
+   my (%self, %reachable_ips, %own_ips);
 
-   for (@a) {
-      my ($ip, $mask);
+   for (@self_addrs) {
+      my ($ip, $mask, $mask_for_nmap);
 
       ($ip, $mask) = m{inet ([\d.]+).*netmask ([^ ]+)}i unless $ip;
+      next unless $ip;
 
-      $ip = "xxx" unless $ip;
+      $mask = common->mask_to_ip($mask);
 
-      $ips{$ip} = common->mask_to_ip($mask);
+      $mask_for_nmap = common->ip_to_mask($mask);
+      `nmap -sn $ip\/$mask_for_nmap`;
+      chomp(my @arp = `arp -an |awk '!/incomplete/{print \$2}' |tr -d '()'`);
+      $reachable_ips{$_} = $mask for @arp;
+
+      $own_ips{$ip} = $mask;
    }
+   $self{reachable_ips} = \%reachable_ips;
+   $self{own_ips} = \%own_ips;
 
-   return %ips;
+# determine default GWs
+   chomp(my @gws = `netstat -rn |awk '\$3~/G/{print \$2}'`);
+   $self{gws} = \@gws;
+
+   return \%self;
 }
 
 1;
