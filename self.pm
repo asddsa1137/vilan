@@ -42,7 +42,7 @@ sub new($) {
    eval "$_\->check()" and $prefix = $_ for (map { s,^\d+_,,r } keys %_modules);
    exit 2 unless $prefix;
 
-   print "I am $prefix !\n";
+   print STDERR "I am $prefix !\n";
    %self = %{ eval "$prefix\->get_self()" };
 
    return bless \%self, $self;

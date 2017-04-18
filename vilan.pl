@@ -9,6 +9,7 @@ binmode STDOUT, ':utf8';
 
 use self;
 use adc::common;
+use digraph;
 
 =encoding utf-8
 
@@ -39,8 +40,18 @@ unless (my $rc = do $config_file) {
 
 my $self = self->new();
 
-common->print_ip_mask($self->{ips});
-common->print_gws($self->{gws});
+# common->print_table_ip_mask($self->{own_ips});
+# common->print_gws($self->{gws});
+
+while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
+   digraph->add_connection($own_ip, 
+      common->find_ips_in_subnet($own_ip, $own_mask, $self->{reachable_ips})
+   );
+}
+
+digraph->add_gateway($_) for @{$self->{gws}};
+
+digraph->print();
 
 =head1 FUNCTIONS
 

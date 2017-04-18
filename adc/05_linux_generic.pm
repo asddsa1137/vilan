@@ -39,7 +39,7 @@ sub check {
 }
 
 sub get_self {
-   my (%self, %ips);
+   my (%self, %reachable_ips, %own_ips);
    chomp(my @self_addr = `(ip a || ifconfig -a) 2>/dev/null |awk '!/127.0.0.1/ && \$1=="inet"{print}'`);
 
 # find all visible ips
@@ -48,20 +48,19 @@ sub get_self {
 
       ($ip, $mask) = m{addr:([\d.]+).*mask:([\d.]+)}i unless $ip;
       ($ip, $mask) = m{inet ([\d.]+)/([\d]+)}i unless $ip;
-      return {} unless $ip;
+      next unless $ip;
 
       $mask = common->mask_to_ip($mask);
 
       $mask_for_nmap = common->ip_to_mask($mask);
       `nmap -sn $ip\/$mask_for_nmap`;
-      chomp(my @b = `arp -n |awk 'NR>1 && !/incomplete/ {print \$1}'`);
-      for (@b) {
-         $ips{$_} = $mask;
-      }
+      chomp(my @arp = `arp -n |awk 'NR>1 && !/incomplete/ {print \$1}'`);
+      $reachable_ips{$_} = $mask for @arp;
 
-      $ips{$ip} = $mask;
+      $own_ips{$ip} = $mask;
    }
-   $self{ips} = \%ips;
+   $self{reachable_ips} = \%reachable_ips;
+   $self{own_ips} = \%own_ips;
 
 # determine default GWs
    chomp(my @gws = `route -n |awk 'NR>2 && \$2!="0.0.0.0"{print \$2}'`);
