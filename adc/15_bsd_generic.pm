@@ -7,7 +7,7 @@ no warnings 'experimental';
 use utf8;
 binmode STDOUT, ':utf8';
 
-use adc::adc;
+use adc::common;
 
 =encoding utf-8
 
@@ -49,7 +49,7 @@ sub get_ips {
 
       $ip = "xxx" unless $ip;
 
-      $ips{$ip} = adc->mask_to_ip($mask);
+      $ips{$ip} = common->mask_to_ip($mask);
    }
 
    return %ips;

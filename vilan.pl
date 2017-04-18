@@ -8,7 +8,7 @@ use utf8;
 binmode STDOUT, ':utf8';
 
 use self;
-use adc::adc;
+use adc::common;
 
 =encoding utf-8
 
@@ -38,7 +38,7 @@ unless (my $rc = do $config_file) {
 }
 
 my $self = self->new();
-adc->print_ip_mask($self->get_ips());
+common->print_ip_mask($self->get_ips());
 
 =head1 FUNCTIONS
 

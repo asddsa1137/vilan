@@ -7,7 +7,7 @@ no warnings 'experimental';
 use utf8;
 binmode STDOUT, ':utf8';
 
-use adc::adc;
+use adc::common;
 
 =encoding utf-8
 
@@ -39,7 +39,7 @@ sub check {
 }
 
 sub get_ips {
-   chomp(my @a = `(ip a || ifconfig -a) 2>/dev/null |awk '\$1=="inet"{print}' |grep -v 127.0.0.1`);
+   chomp(my @a = `(ip a || ifconfig -a) 2>/dev/null |awk '\$1=="inet"{print}' |grep -v '127.0.0.1'`);
    my %ips;
 
    for (@a) {
@@ -49,7 +49,7 @@ sub get_ips {
       ($ip, $mask) = m{inet ([\d.]+)/([\d]+)}i unless $ip;
       return ("xxx") unless $ip;
 
-      $mask = adc->ip_to_mask($mask);
+      $mask = common->ip_to_mask($mask);
       $ips{$ip} = $mask;
 
       `nmap -sn $ip\/$mask`;
