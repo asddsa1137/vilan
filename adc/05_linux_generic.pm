@@ -40,7 +40,7 @@ sub get_self {
       $mask = common->mask_to_ip($mask);
 
       $mask_for_nmap = common->ip_to_mask($mask);
-      `nmap -sn $ip\/$mask_for_nmap`;
+      `nmap -sn -PR -n $ip\/$mask_for_nmap`;
       chomp(my @arp = `arp -n |awk 'NR>1 && !/incomplete/ {print \$1}'`);
       $reachable_ips{$_} = $mask for @arp;
 

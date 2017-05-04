@@ -121,7 +121,7 @@ sub mask_to_ip($$) {
 sub print_table_ip_mask($\%) {
    shift; #self
    printf "[%s] [%s]\n", $_, $_[0]->{$_} for keys %{ $_[0] };
-   printf "Total alive hosts: %s\n",  scalar(keys($_[0]));
+   printf "Total alive hosts: %s\n",  scalar(keys(@{$_[0]}));
 }
 
 sub print_gws($\@) {
