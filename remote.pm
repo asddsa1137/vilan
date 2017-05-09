@@ -26,7 +26,7 @@ package self;
 
 =item B<new()>
 
-   return: an instance of self object
+   return: an instance of self object containing information about remote node
 
 This function is ctor.
 
@@ -34,16 +34,21 @@ This function is ctor.
 
 my %ips = ();
 
-sub new($) {
+sub new($$$$) {
+   # WARNING!!! NOT YET USEABLE CODE!
    my $self = shift;
+   my $target_ip = shift;
+   my $ssh_location = shift;
+   my $screen_location = shift;
    my %self;
 
    my $prefix;
-   eval "$_\->check_local()" and $prefix = $_ for (map { s,^\d+_,,r } keys %_modules);
+   # TODO check_remote should create active screen, login and check. If success, run get_self_remote using active screen
+   eval "$_\->check_remote($target_ip)" and $prefix = $_ for (map { s,^\d+_,,r } keys %_modules);
    exit 2 unless $prefix;
 
    print STDERR "I am $prefix !\n";
-   %self = %{ eval "$prefix\->get_self_local()" };
+   %self = %{ eval "$prefix\->get_self_remote($target_ip)" };
 
    return bless \%self, $self;
 }

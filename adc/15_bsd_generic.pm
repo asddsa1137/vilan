@@ -21,11 +21,17 @@ use adc::common;
 
 package bsd_generic;
 
-sub check {
+sub check_local {
    return `uname -s` =~ m{BSD}i;
 }
 
-sub get_self {
+sub check_remote($$) {
+   shift; #self
+   my $target_ip = shift;
+   #TODO
+}
+
+sub get_self_local {
    chomp(my @self_addrs = `/sbin/ifconfig -a 2>/dev/null |awk '\$1=="inet"{print}'`);
    my (%self, %reachable_ips, %own_ips);
 
@@ -51,7 +57,19 @@ sub get_self {
    chomp(my @gws = `netstat -rn |awk '\$3~/G/{print \$2}'`);
    $self{gws} = \@gws;
 
+# determine location of screen and openssh
+   chomp(my $screen_location = `which screen`);
+   chomp(my $openssh_location = `which ssh`);
+   $self{screen} = $screen_location;
+   $self{openssh} = $openssh_location;
+
    return \%self;
+}
+
+sub get_self_remote($$) {
+   shift; #self
+   my $target_ip = shift;
+   #TODO
 }
 
 1;

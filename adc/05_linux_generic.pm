@@ -21,11 +21,17 @@ use adc::common;
 
 package linux_generic;
 
-sub check {
+sub check_local {
    return `uname -s` =~ "Linux";
 }
 
-sub get_self {
+sub check_remote($$) {
+   shift; #self
+   my $target_ip = shift;
+   #TODO
+}
+
+sub get_self_local {
    my (%self, %reachable_ips, %own_ips);
    chomp(my @self_addrs = `(ip a || ifconfig -a) 2>/dev/null |awk '!/127.0.0.1/ && \$1=="inet"{print}'`);
 
@@ -53,8 +59,21 @@ sub get_self {
    chomp(my @gws = `netstat -rn |awk '\$4~/G/{print \$2}'`);
    $self{gws} = \@gws;
 
+# determine location of screen and openssh
+   chomp(my $screen_location = `which screen`);
+   chomp(my $openssh_location = `which ssh`);
+   $self{screen} = $screen_location;
+   $self{openssh} = $openssh_location;
+
    return \%self;
 }
+
+sub get_self_remote($$) {
+   shift; #self
+   my $target_ip = shift;
+   #TODO
+}
+
 
 1;
 
