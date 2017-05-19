@@ -29,6 +29,7 @@ sub check_remote($$) {
    shift; #self
    my $target_ip = shift;
    #TODO
+   return 0;
 }
 
 sub get_self_local {

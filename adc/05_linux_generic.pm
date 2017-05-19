@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+package linux_generic;
 
 use strict;
 use v5.18;
@@ -8,6 +9,7 @@ use utf8;
 binmode STDOUT, ':utf8';
 
 use adc::common;
+use Libssh::Session qw(:all);
 
 =encoding utf-8
 
@@ -19,8 +21,6 @@ use adc::common;
 
 =cut
 
-package linux_generic;
-
 sub check_local {
    return `uname -s` =~ "Linux";
 }
@@ -28,7 +28,24 @@ sub check_local {
 sub check_remote($$) {
    shift; #self
    my $target_ip = shift;
-   #TODO
+   my $session = Libssh::Session->new();
+   if (!$session->options(host => $target_ip, user => "root", port => 22)) {
+      return 0;
+   }
+
+   if ($session->connect() != SSH_OK) {
+      return 0;
+   }
+
+   if ($session->auth_password(password => "sexy") != SSH_AUTH_SUCCESS) {
+      return 0;
+   }
+
+   my %rc = %{ $session->execute_simple(
+         cmd => 'uname -s', timeout => 60, timeout_nodata => 30
+      )};
+
+   return $rc{stdout} =~ "Linux";
 }
 
 sub get_self_local {
@@ -72,6 +89,7 @@ sub get_self_remote($$) {
    shift; #self
    my $target_ip = shift;
    #TODO
+   return {};
 }
 
 

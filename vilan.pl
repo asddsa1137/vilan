@@ -8,6 +8,7 @@ use utf8;
 binmode STDOUT, ':utf8';
 
 use self;
+use remote;
 use adc::common;
 use digraph;
 
@@ -51,7 +52,10 @@ while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
 
 digraph->add_gateway($_) for @{$self->{gws}};
 
+
 digraph->print();
+
+$self = remote->new("192.168.2.24");
 
 =head1 FUNCTIONS
 
