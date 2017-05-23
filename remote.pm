@@ -34,19 +34,20 @@ This function is ctor.
 
 my %ips = ();
 
-sub new($$) {
-   # WARNING!!! NOT YET USEABLE CODE!
+sub new($$$$) {
    my $self = shift;
    my $target_ip = shift // die 'no target ip';
+   my $username = shift;
+   my $password = shift;
    my %self;
 
    my $prefix;
-   # TODO check_remote should create active screen, login and check. If success, run get_self_remote using active screen
-   eval "$_\->check_remote(\$target_ip)" and $prefix = $_ for (map { s,^\d+_,,r } keys %_modules);
+
+   eval "$_\->check_remote(\$target_ip, \$username, \$password)" and $prefix = $_ for (map { s,^\d+_,,r } keys %_modules);
    exit 2 unless $prefix;
 
    print STDERR "I am remote $prefix !\n";
-   %self = %{ eval "$prefix\->get_self_remote(\$target_ip)" };
+   %self = %{ eval "$prefix\->get_self_remote(\$target_ip, \$username, \$password)" };
 
    return bless \%self, $self;
 }

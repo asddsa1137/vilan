@@ -41,9 +41,6 @@ unless (my $rc = do $config_file) {
 
 my $self = self->new();
 
-# common->print_table_ip_mask($self->{own_ips});
-# common->print_gws($self->{gws});
-
 while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
    digraph->add_connection($own_ip, 
       common->find_ips_in_subnet($own_ip, $own_mask, $self->{reachable_ips})
@@ -52,10 +49,20 @@ while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
 
 digraph->add_gateway($_) for @{$self->{gws}};
 
+#digraph->print();
+
+print "!!!!!!!!!!!!!!!!!\n";
+$self = remote->new("192.168.2.24", "user", "password");
+# output is bugged!
+while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
+   digraph->add_connection($own_ip, 
+      common->find_ips_in_subnet($own_ip, $own_mask, $self->{reachable_ips})
+   );
+}
+
+digraph->add_gateway($_) for @{$self->{gws}};
 
 digraph->print();
-
-$self = remote->new("192.168.2.24");
 
 =head1 FUNCTIONS
 
