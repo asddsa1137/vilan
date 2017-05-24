@@ -49,10 +49,9 @@ while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
 
 digraph->add_gateway($_) for @{$self->{gws}};
 
-#digraph->print();
+digraph->print();
 
-print "!!!!!!!!!!!!!!!!!\n";
-$self = remote->new("192.168.2.24", "user", "password");
+$self = remote->new("192.168.2.24", "username", "password");
 # output is bugged!
 while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
    digraph->add_connection($own_ip, 
@@ -63,6 +62,8 @@ while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
 digraph->add_gateway($_) for @{$self->{gws}};
 
 digraph->print();
+
+print "End of scan.\n";
 
 =head1 FUNCTIONS
 

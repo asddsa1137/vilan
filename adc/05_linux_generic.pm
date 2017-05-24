@@ -38,11 +38,14 @@ sub check_remote($$$$) {
    }
 
    if ($session->connect() != SSH_OK) {
+      print STDERR "Can't connect to $target_ip using ssh.";
+      print STDERR "Continuing without remote scan of this host.\n";
       return 0;
    }
 
    if ($session->auth_password(password => $password) != SSH_AUTH_SUCCESS) {
       print STDERR "Incorrent username or password for host $target_ip.\n";
+      print STDERR "Continuing without remote scan of this host.\n";
       return 0;
    }
 
@@ -137,6 +140,13 @@ sub get_self_remote($$$$) {
 
    chomp(my @self_addrs = split '\n', $rc{stdout});
 
+# check for nmap presence and ping entire subnet
+   %rc = %{ $session->execute_simple(
+         cmd => 'which nmap', timeout => 60, timeout_nodata => 30
+      )};
+   chomp(my $nmap_pres = $rc{stdout});
+
+
 # find all visible ips
 
    for (@self_addrs) {
@@ -150,22 +160,17 @@ sub get_self_remote($$$$) {
 
       $numerical_mask = common->ip_to_mask($mask);
 
-# check for nmap presence and ping entire subnet
-      %rc = %{ $session->execute_simple(
-            cmd => 'which nmap', timeout => 60, timeout_nodata => 30
-         )};
-      chomp(my $nmap_pres = $rc{stdout});
-
       if ($nmap_pres eq "") {
          if($numerical_mask ge 20) {
             my @AoH;
             $self{nmap_pres} = "0";
             my $ip_to_ping = new Net::IP(new Net::Netmask("$ip/$numerical_mask")->base()."/".$numerical_mask);
             do {
-               my $command_hash->{cmd} = ("ping -c 1 -W 1 ".$ip_to_ping->ip()." >/dev/null/ &");
+               my $command_hash->{cmd} = ("ping -c 1 -W 1 ".$ip_to_ping->ip()." >/dev/null &");
                push @AoH, $command_hash;
             } while (++$ip_to_ping);
-            sleep 5;
+            $session->execute(commands => \@AoH, timeout => 10, timeout_nodata => 10, parallel => 5);
+            sleep 5; #wait for ping end on remote host
          }
          else {
             print STDERR "OMG! Network $ip/$numerical_mask is too big. Max is /20\n";
