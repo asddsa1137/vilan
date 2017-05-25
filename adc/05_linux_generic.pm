@@ -131,10 +131,15 @@ sub get_self_remote($$$$) {
       return 0;
    }
 
+# set locale
+
+   my %rc = %{ $session->execute_simple(
+         cmd => 'export LANG=C LC_ALL=C', timeout => 60, timeout_nodata => 30
+      )};
 
 # get ip configuration
 
-   my %rc = %{ $session->execute_simple(
+   %rc = %{ $session->execute_simple(
          cmd => '(ip a || ifconfig -a) 2>/dev/null |awk \'!/127.0.0.1/ && $1=="inet"{print}\'', timeout => 60, timeout_nodata => 30
       )};
 

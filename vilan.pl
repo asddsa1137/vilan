@@ -12,6 +12,9 @@ use remote;
 use adc::common;
 use digraph;
 
+$ENV{LANG}='C';
+$ENV{LC_ALL}='C';
+
 =encoding utf-8
 
 =head1 NAME
@@ -51,7 +54,9 @@ digraph->add_gateway($_) for @{$self->{gws}};
 
 digraph->print();
 
-$self = remote->new("192.168.2.24", "username", "password");
+my $tmp_ip = "192.168.2.24";
+
+$self = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password});
 # output is bugged!
 while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
    digraph->add_connection($own_ip, 
