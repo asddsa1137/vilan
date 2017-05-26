@@ -12,6 +12,7 @@ use adc::common;
 use Libssh::Session qw(:all);
 use Net::IP;
 use Net::Netmask;
+use Data::Dumper;
 
 =encoding utf-8
 
@@ -59,10 +60,10 @@ sub check_remote($$$$) {
 }
 
 sub get_self_local {
-   my (%self, %reachable_ips, %own_ips);
+   my (%self, @own_ips_AoH, @reachable_ips_AoH);
 
 
-   chomp(my @self_addrs = `(ip a || ifconfig -a) 2>/dev/null |awk '!/127.0.0.1/ && \$1=="inet"{print}'`);
+   chomp(my @self_addrs = `(ip a || ifconfig -a) 2>/dev/null |awk '!/127.[0-9]*.[0-9]*.[0-9]*/ && \$1=="inet"{print}'`);
 
 # find all visible ips
    for (@self_addrs) {
@@ -72,6 +73,7 @@ sub get_self_local {
       ($ip, $mask) = m{inet ([\d.]+)/([\d]+)}i unless $ip;
       next unless $ip;
 
+      chomp(my $MAC = `ifconfig -a |grep -B1 '\\<$ip\\>' |awk 'NR==1{print \$NF}'`);
       $mask = common->mask_to_ip($mask);
 
       $numerical_mask = common->ip_to_mask($mask);
@@ -96,13 +98,18 @@ sub get_self_local {
          `nmap -sn -n $ip\/$numerical_mask`;
       }
 
-      chomp(my @arp = `arp -n |awk 'NR>1 && !/incomplete/ {print \$1}'`);
-      $reachable_ips{$_} = $mask for @arp;
-
-      $own_ips{$ip} = $mask;
+      my $own_ips->{ip} = $ip;
+      $own_ips->{mask} = $mask;
+      $own_ips->{mac} = $MAC;
+      push @own_ips_AoH, $own_ips;
    }
-   $self{reachable_ips} = \%reachable_ips;
-   $self{own_ips} = \%own_ips;
+   $self{own_ips} = \@own_ips_AoH;
+
+   for(`arp -n |awk 'NR>1 && !/incomplete/ {print \$1 " " \$3}'`) {
+      /^([\d.]+) ([a-f:\d]+)\n?$/ && push @reachable_ips_AoH, { ip=>$1, mac=>$2 };
+   }
+
+   $self{reachable_ips} = \@reachable_ips_AoH;
 
 # determine default GWs
    chomp(my @gws = `netstat -rn |awk '\$4~/G/{print \$2}'`);
@@ -116,7 +123,7 @@ sub get_self_remote($$$$) {
    my $target_ip = shift;
    my $username = shift;
    my $password = shift;
-   my (%self, %reachable_ips, %own_ips);
+   my (%self, @own_ips_AoH, @reachable_ips_AoH, %ips_pushed);
    my $session = Libssh::Session->new();
 
    if (!$session->options(host => $target_ip, user => $username, port => 22)) {
@@ -131,26 +138,19 @@ sub get_self_remote($$$$) {
       return 0;
    }
 
-# set locale
-
-   my %rc = %{ $session->execute_simple(
-         cmd => 'export LANG=C LC_ALL=C', timeout => 60, timeout_nodata => 30
-      )};
-
 # get ip configuration
 
-   %rc = %{ $session->execute_simple(
-         cmd => '(ip a || ifconfig -a) 2>/dev/null |awk \'!/127.0.0.1/ && $1=="inet"{print}\'', timeout => 60, timeout_nodata => 30
+   my %rc = %{ $session->execute_simple(
+         cmd => 'export LC_ALL=C LANG=C; (ip a || ifconfig -a) 2>/dev/null |awk \'!/127.[0-9]*.[0-9]*.[0-9]*/ && $1=="inet"{print}\'', timeout => 60, timeout_nodata => 30
       )};
 
    chomp(my @self_addrs = split '\n', $rc{stdout});
 
-# check for nmap presence and ping entire subnet
+# check for nmap presence
    %rc = %{ $session->execute_simple(
          cmd => 'which nmap', timeout => 60, timeout_nodata => 30
       )};
    chomp(my $nmap_pres = $rc{stdout});
-
 
 # find all visible ips
 
@@ -161,10 +161,17 @@ sub get_self_remote($$$$) {
       ($ip, $mask) = m{inet ([\d.]+)/([\d]+)}i unless $ip;
       next unless $ip;
 
+      %rc = %{ $session->execute_simple(
+            cmd => "export LC_ALL=C LANG=C; ifconfig -a |grep -B1 '\\<$ip\\>' |awk 'NR==1{print \$NF}'", timeout => 60, timeout_nodata => 30
+         )};
+      chomp(my $MAC = $rc{stdout});
+
       $mask = common->mask_to_ip($mask);
 
       $numerical_mask = common->ip_to_mask($mask);
 
+      # ping entire subnet
+      
       if ($nmap_pres eq "") {
          if($numerical_mask ge 20) {
             my @AoH;
@@ -184,24 +191,32 @@ sub get_self_remote($$$$) {
       }
       else {
          $self{nmap_pres} = "1";
-         $session->execute_simple(cmd => "nmap -sn -n $ip/$numerical_mask",
+         $session->execute_simple(cmd => "export LC_ALL=C LANG=C; nmap -sn -n $ip/$numerical_mask",
             timeout => 60, timeout_nodata => 30);
       }
 
-      %rc = %{ $session->execute_simple(
-            cmd => "arp -n |awk 'NR>1 && !/incomplete/ {print \$1}'", timeout => 60, timeout_nodata => 30
-         )};
-      chomp(my @arp = split '\n', $rc{stdout});
-      $reachable_ips{$_} = $mask for @arp;
 
-      $own_ips{$ip} = $mask;
+      my $own_ips->{ip} = $ip;
+      $own_ips->{mask} = $mask;
+      $own_ips->{mac} = $MAC;
+      push @own_ips_AoH, $own_ips;
    }
-   $self{reachable_ips} = \%reachable_ips;
-   $self{own_ips} = \%own_ips;
+
+   $self{own_ips} = \@own_ips_AoH;
+
+   %rc = %{ $session->execute_simple(
+         cmd => "export LC_ALL=C LANG=C; arp -n |awk 'NR>1 && !/incomplete/ {print \$1 \" \" \$3}'", timeout => 60, timeout_nodata => 30
+      )};
+   chomp(my @arp_output = split '\n', $rc{stdout});
+   for(@arp_output) {
+      /^([\d.]+) ([a-f:\d]+)\n?$/ && push @reachable_ips_AoH, { ip=>$1, mac=>$2 };
+   }
+
+   $self{reachable_ips} = \@reachable_ips_AoH;
 
 # determine default GWs
    %rc = %{ $session->execute_simple(
-         cmd => "netstat -rn |awk '\$4~/G/{print \$2}'", timeout => 60, timeout_nodata => 30
+         cmd => "export LC_ALL=C LANG=C; netstat -rn |awk '\$4~/G/{print \$2}'", timeout => 60, timeout_nodata => 30
       )};
    chomp(my @gws = split '\n', $rc{stdout});
    $self{gws} = \@gws;

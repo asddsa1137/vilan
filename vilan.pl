@@ -11,6 +11,7 @@ use self;
 use remote;
 use adc::common;
 use digraph;
+use Data::Dumper;
 
 $ENV{LANG}='C';
 $ENV{LC_ALL}='C';
@@ -44,29 +45,31 @@ unless (my $rc = do $config_file) {
 
 my $self = self->new();
 
-while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
-   digraph->add_connection($own_ip, 
-      common->find_ips_in_subnet($own_ip, $own_mask, $self->{reachable_ips})
-   );
-}
+#print Dumper($self, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+#while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
+#   digraph->add_connection($own_ip, 
+#      common->find_ips_in_subnet($own_ip, $own_mask, $self->{reachable_ips})
+#   );
+#}
 
-digraph->add_gateway($_) for @{$self->{gws}};
+#digraph->add_gateway($_) for @{$self->{gws}};
 
-digraph->print();
+#digraph->print();
 
 my $tmp_ip = "192.168.2.24";
 
-$self = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password});
+my $self_remote = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password});
 # output is bugged!
-while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
-   digraph->add_connection($own_ip, 
-      common->find_ips_in_subnet($own_ip, $own_mask, $self->{reachable_ips})
-   );
-}
+#while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
+#   digraph->add_connection($own_ip, 
+#      common->find_ips_in_subnet($own_ip, $own_mask, $self->{reachable_ips})
+#   );
+#}
 
-digraph->add_gateway($_) for @{$self->{gws}};
+#digraph->add_gateway($_) for @{$self->{gws}};
 
-digraph->print();
+#digraph->print();
+print Dumper($self_remote);
 
 print "End of scan.\n";
 

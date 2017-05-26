@@ -48,6 +48,7 @@ sub new($$$$) {
 
    print STDERR "I am remote $prefix !\n";
    %self = %{ eval "$prefix\->get_self_remote(\$target_ip, \$username, \$password)" };
+   $self{lib_used} = $prefix;
 
    return bless \%self, $self;
 }
