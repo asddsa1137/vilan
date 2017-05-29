@@ -28,11 +28,12 @@ sub check_local {
    return `uname -s` =~ "Linux";
 }
 
-sub check_remote($$$$) {
+sub check_remote($$$$$) {
    shift; #self
    my $target_ip = shift;
-   my $username = shift;
-   my $password = shift;
+   my $HOSTS = shift;
+   my $username = $HOSTS->{"$target_ip"}->{username};
+   my $password = $HOSTS->{"$target_ip"}->{password};
    my $session = Libssh::Session->new();
    if (!$session->options(host => $target_ip, user => $username, port => 22)) {
       return 0;
@@ -78,20 +79,21 @@ sub get_self_local {
 
       $numerical_mask = common->ip_to_mask($mask);
 
-      if($numerical_mask lt 20) {
-         print("OMG! Network $ip/$numerical_mask is too big. Install nmap on local device.\n");
-         return {};
-      }
-
 # check for nmap presence and ping entire subnet
       chomp(my $nmap_pres = `which nmap`);
       if ($nmap_pres eq "") {
-         $self{nmap_pres} = "0";
-         my $test_ip = new Net::IP(new Net::Netmask("$ip/$numerical_mask")->base()."/".$numerical_mask);
-         do {
-            system("ping -c 1 -W 1 ".$test_ip->ip()." >/dev/null &");
-         } while (++$test_ip);
-         sleep 5
+         if($numerical_mask ge 20) {
+            $self{nmap_pres} = "0";
+            my $test_ip = new Net::IP(new Net::Netmask("$ip/$numerical_mask")->base()."/".$numerical_mask);
+            do {
+               system("ping -c 1 -W 1 ".$test_ip->ip()." >/dev/null &");
+            } while (++$test_ip);
+            sleep 5;
+         }
+         else {
+            print STDERR "OMG! Network $ip/$numerical_mask is too big. Max is /20\n";
+            print STDERR "Install nmap on local machine for more accurate scan result.\n";
+         }
       }
       else {
          $self{nmap_pres} = "1";
@@ -121,8 +123,9 @@ sub get_self_local {
 sub get_self_remote($$$$) {
    shift; #self
    my $target_ip = shift;
-   my $username = shift;
-   my $password = shift;
+   my $HOSTS = shift;
+   my $username = $HOSTS->{"$target_ip"}->{username};
+   my $password = $HOSTS->{"$target_ip"}->{password};
    my (%self, @own_ips_AoH, @reachable_ips_AoH, %ips_pushed);
    my $session = Libssh::Session->new();
 

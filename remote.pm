@@ -31,23 +31,25 @@ package remote;
 This function is ctor.
 
 =cut
+use Data::Dumper;
 
 my %ips = ();
 
-sub new($$$$) {
+sub new($$$$$) {
    my $self = shift;
    my $target_ip = shift // die 'no target ip';
    my $username = shift;
    my $password = shift;
+   my $HOSTS = shift;
    my %self;
 
    my $prefix;
 
-   eval "$_\->check_remote(\$target_ip, \$username, \$password)" and $prefix = $_ for (map { s,^\d+_,,r } keys %_modules);
+   eval "$_\->check_remote(\$target_ip, \$HOSTS)" and $prefix = $_ for (map { s,^\d+_,,r } keys %_modules);
    exit 2 unless $prefix;
 
    print STDERR "I am remote $prefix !\n";
-   %self = %{ eval "$prefix\->get_self_remote(\$target_ip, \$username, \$password)" };
+   %self = %{ eval "$prefix\->get_self_remote(\$target_ip, \$HOSTS)" };
    $self{lib_used} = $prefix;
 
    return bless \%self, $self;

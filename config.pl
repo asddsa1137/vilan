@@ -9,4 +9,6 @@ $HOSTS{"192.168.2.24"} = {
 $HOSTS{"192.168.2.173"} = {
    username => '',
    password => 'changeme',
+   enable_user => '',
+   enable_password => "changeme",
 };

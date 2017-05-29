@@ -56,9 +56,10 @@ my $self = self->new();
 
 #digraph->print();
 
-my $tmp_ip = "192.168.2.24";
+#my $tmp_ip = "192.168.2.24";
+my $tmp_ip = "192.168.2.173";
 
-my $self_remote = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password});
+my $self_remote = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password}, \%HOSTS);
 # output is bugged!
 #while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
 #   digraph->add_connection($own_ip, 
