@@ -56,7 +56,7 @@ sub get_self_remote($$$$) {
    my $HOSTS = shift;
    my $username = $HOSTS->{"$target_ip"}->{username};
    my $password = $HOSTS->{"$target_ip"}->{password};
-   my (%self, @own_ips_AoH, @reachable_ips_AoH);
+   my (%self, @own_ips_AoH, @reachable_ips_AoH, @routes_AoH);
 
    my $session = Net::Telnet::Cisco->new(Host => "$target_ip");
    $session->login("$username", "$password");
@@ -82,22 +82,22 @@ sub get_self_remote($$$$) {
       my $ip_to_ping = new Net::IP(new Net::Netmask("$ip/$numerical_mask")->base()."/".$numerical_mask);
       ++$ip_to_ping; # skip network address
 
-      #if($numerical_mask ge 20) {
-      #   $session->enable(Name => $HOSTS->{"$target_ip"}->{enable_user}, Password => $HOSTS->{"$target_ip"}->{enable_password});
-      #   if ($session->is_enabled) {
-      #      print STDERR "Filling ARP table on Cisco [$ip]. It may take a while...\n";
-      #      do {
-      #         eval {
-      #            $session->cmd("ping ".$ip_to_ping->ip()." ti 1 re 1");
-      #         };
-      #      } while (++$ip_to_ping);
-      #   }
-      #   $session->disable;
-      #}
-      #else {
-      #   print STDERR "OMG! Network $ip/$numerical_mask is too big to ping on Cisco [$ip]. Max is /20\n";
-      #   print STDERR "You will get only hosts existing in Cisco ARP table for subnet $ip/$numerical_mask.\n";
-      #}
+      if($numerical_mask ge 20) {
+         $session->enable(Name => $HOSTS->{"$target_ip"}->{enable_user}, Password => $HOSTS->{"$target_ip"}->{enable_password});
+         if ($session->is_enabled) {
+            print STDERR "Filling ARP table on Cisco [$ip]. It may take a while...\n";
+            do {
+               eval {
+                  $session->cmd("ping ".$ip_to_ping->ip()." ti 1 re 1");
+               };
+            } while (++$ip_to_ping);
+         }
+         $session->disable;
+      }
+      else {
+         print STDERR "OMG! Network $ip/$numerical_mask is too big to ping on Cisco [$ip]. Max is /20\n";
+         print STDERR "You will get only hosts existing in Cisco ARP table for subnet $ip/$numerical_mask.\n";
+      }
 
       my $own_ips->{ip} = $ip;
       $own_ips->{mask} = $mask;
@@ -116,8 +116,11 @@ sub get_self_remote($$$$) {
    $self{reachable_ips} = \@reachable_ips_AoH;
 
 # determine routes
-# TODO
+   for($session->cmd('sh ip route | i via')) {
+      /([\d.]+)\/([\d]+).+via +([\d.]+)/ && push @routes_AoH, { network=>$1, mask=>common->mask_to_ip($2), host=>$3 };
+   }
 
+   $self{routes} = \@routes_AoH;
    $session->close;
    return \%self;
 }

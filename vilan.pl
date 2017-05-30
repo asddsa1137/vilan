@@ -45,7 +45,7 @@ unless (my $rc = do $config_file) {
 
 my $self = self->new();
 
-#print Dumper($self, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+print Dumper($self, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 #while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
 #   digraph->add_connection($own_ip, 
 #      common->find_ips_in_subnet($own_ip, $own_mask, $self->{reachable_ips})
@@ -56,7 +56,6 @@ my $self = self->new();
 
 #digraph->print();
 
-#my $tmp_ip = "192.168.2.24";
 my $tmp_ip = "192.168.2.173";
 
 my $self_remote = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password}, \%HOSTS);
@@ -71,6 +70,10 @@ my $self_remote = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_
 
 #digraph->print();
 print Dumper($self_remote);
+
+$tmp_ip = "192.168.2.24";
+my $self_remote2 = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password}, \%HOSTS);
+print Dumper($self_remote2);
 
 print "End of scan.\n";
 

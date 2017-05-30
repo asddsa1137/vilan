@@ -61,10 +61,10 @@ sub check_remote($$$$$) {
 }
 
 sub get_self_local {
-   my (%self, @own_ips_AoH, @reachable_ips_AoH);
+   my (%self, @own_ips_AoH, @reachable_ips_AoH, @routes_AoH);
 
 
-   chomp(my @self_addrs = `(ip a || ifconfig -a) 2>/dev/null |awk '!/127.[0-9]*.[0-9]*.[0-9]*/ && \$1=="inet"{print}'`);
+   chomp(my @self_addrs = `export LC_ALL=C LANG=C; (ip a || ifconfig -a) 2>/dev/null |awk '!/127.[0-9]*.[0-9]*.[0-9]*/ && \$1=="inet"{print}'`);
 
 # find all visible ips
    for (@self_addrs) {
@@ -74,7 +74,7 @@ sub get_self_local {
       ($ip, $mask) = m{inet ([\d.]+)/([\d]+)}i unless $ip;
       next unless $ip;
 
-      chomp(my $MAC = `ifconfig -a |grep -B1 '\\<$ip\\>' |awk 'NR==1{print \$NF}'`);
+      chomp(my $MAC = `export LC_ALL=C LANG=C; ifconfig -a |grep -B1 '\\<$ip\\>' |awk 'NR==1{print \$NF}'`);
       $mask = common->mask_to_ip($mask);
 
       $numerical_mask = common->ip_to_mask($mask);
@@ -97,7 +97,7 @@ sub get_self_local {
       }
       else {
          $self{nmap_pres} = "1";
-         `nmap -sn -n $ip\/$numerical_mask`;
+         `export LC_ALL=C LANG=C; nmap -sn -n $ip\/$numerical_mask`;
       }
 
       my $own_ips->{ip} = $ip;
@@ -107,15 +107,18 @@ sub get_self_local {
    }
    $self{own_ips} = \@own_ips_AoH;
 
-   for(`arp -n |awk 'NR>1 && !/incomplete/ {print \$1 " " \$3}'`) {
+   for(`export LC_ALL=C LANG=C; arp -n |awk 'NR>1 && !/incomplete/ {print \$1 " " \$3}'`) {
       /^([\d.]+) ([a-f:\d]+)\n?$/ && push @reachable_ips_AoH, { ip=>$1, mac=>$2 };
    }
 
    $self{reachable_ips} = \@reachable_ips_AoH;
 
-# determine default GWs
-   chomp(my @gws = `netstat -rn |awk '\$4~/G/{print \$2}'`);
-   $self{gws} = \@gws;
+# determine routes
+   for(`export LC_ALL=C LANG=C; netstat -rn |awk '\$4~/G/{print \$1" "\$2" "\$3}'`) {
+      /([\d.]+) ([\d.]+) ([\d.]+)/ && push @routes_AoH, { network=>$1, mask=>$3, host=>$2 };
+   }
+
+   $self{routes} = \@routes_AoH;
 
    return \%self;
 }
@@ -126,7 +129,7 @@ sub get_self_remote($$$$) {
    my $HOSTS = shift;
    my $username = $HOSTS->{"$target_ip"}->{username};
    my $password = $HOSTS->{"$target_ip"}->{password};
-   my (%self, @own_ips_AoH, @reachable_ips_AoH, %ips_pushed);
+   my (%self, @own_ips_AoH, @reachable_ips_AoH, @routes_AoH);
    my $session = Libssh::Session->new();
 
    if (!$session->options(host => $target_ip, user => $username, port => 22)) {
@@ -217,12 +220,17 @@ sub get_self_remote($$$$) {
 
    $self{reachable_ips} = \@reachable_ips_AoH;
 
-# determine default GWs
+# determine routes
    %rc = %{ $session->execute_simple(
-         cmd => "export LC_ALL=C LANG=C; netstat -rn |awk '\$4~/G/{print \$2}'", timeout => 60, timeout_nodata => 30
+         cmd => "export LC_ALL=C LANG=C; netstat -rn |awk '\$4~/G/{print \$1\" \"\$2\" \"\$3}'", timeout => 60, timeout_nodata => 30
       )};
-   chomp(my @gws = split '\n', $rc{stdout});
-   $self{gws} = \@gws;
+   chomp(my @routes = split '\n', $rc{stdout});
+
+   for(@routes) {
+      /([\d.]+) ([\d.]+) ([\d.]+)/ && push @routes_AoH, { network=>$1, mask=>$3, host=>$2 };
+   }
+
+   $self{routes} = \@routes_AoH;
 
    $session->disconnect();
    return \%self;
