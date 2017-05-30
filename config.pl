@@ -2,8 +2,13 @@
 # Hosts hash
 
 $HOSTS{"192.168.2.24"} = {
-   username => 'username',
-   password => 'password',
+   username => 'user',
+   password => 'pass',
+};
+
+$HOSTS{"192.168.2.58"} = {
+   username => 'root',
+   password => 'changeme',
 };
 
 $HOSTS{"192.168.2.173"} = {

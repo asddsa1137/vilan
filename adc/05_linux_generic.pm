@@ -28,7 +28,7 @@ sub check_local {
    return `uname -s` =~ "Linux";
 }
 
-sub check_remote($$$$$) {
+sub check_remote($$$$) {
    shift; #self
    my $target_ip = shift;
    my $HOSTS = shift;
@@ -62,7 +62,6 @@ sub check_remote($$$$$) {
 
 sub get_self_local {
    my (%self, @own_ips_AoH, @reachable_ips_AoH, @routes_AoH);
-
 
    chomp(my @self_addrs = `export LC_ALL=C LANG=C; (ip a || ifconfig -a) 2>/dev/null |awk '!/127.[0-9]*.[0-9]*.[0-9]*/ && \$1=="inet"{print}'`);
 

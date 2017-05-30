@@ -43,9 +43,8 @@ unless (my $rc = do $config_file) {
    warn "couldn't run $config_file" unless $rc;
 }
 
-my $self = self->new();
+#my $self = self->new();
 
-print Dumper($self, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 #while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
 #   digraph->add_connection($own_ip, 
 #      common->find_ips_in_subnet($own_ip, $own_mask, $self->{reachable_ips})
@@ -56,9 +55,7 @@ print Dumper($self, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
 #digraph->print();
 
-my $tmp_ip = "192.168.2.173";
 
-my $self_remote = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password}, \%HOSTS);
 # output is bugged!
 #while (my ($own_ip, $own_mask) = each $self->{own_ips}) {
 #   digraph->add_connection($own_ip, 
@@ -69,11 +66,27 @@ my $self_remote = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_
 #digraph->add_gateway($_) for @{$self->{gws}};
 
 #digraph->print();
-print Dumper($self_remote);
 
-$tmp_ip = "192.168.2.24";
-my $self_remote2 = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password}, \%HOSTS);
-print Dumper($self_remote2);
+### TEST ALL LIBS
+
+# test local linux_generic
+my $self = self->new();
+print Dumper($self);
+
+# test remote cisco_generic
+#my $tmp_ip = "192.168.2.173";
+#my $self_remote = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password}, \%HOSTS);
+#print Dumper($self_remote);
+
+# test remote linux_generic
+# my $tmp_ip = "192.168.2.24";
+# my $self_remote2 = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password}, \%HOSTS);
+# print Dumper($self_remote2);
+
+# test remote bsd_generic
+#my $tmp_ip = "192.168.2.58";
+#my $self_remote3 = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password}, \%HOSTS);
+#print Dumper($self_remote3);
 
 print "End of scan.\n";
 
