@@ -88,6 +88,11 @@ print Dumper($self);
 #my $self_remote3 = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password}, \%HOSTS);
 #print Dumper($self_remote3);
 
+# test remote sunos_generic
+#my $tmp_ip = "192.168.2.3";
+#my $self_remote4 = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password}, \%HOSTS);
+#print Dumper($self_remote4);
+
 print "End of scan.\n";
 
 =head1 FUNCTIONS

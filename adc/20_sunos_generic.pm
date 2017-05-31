@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-package bsd_generic;
+package sunos_generic;
 
 use strict;
 use v5.18;
@@ -26,7 +26,7 @@ use Data::Dumper;
 
 
 sub check_local {
-   return `uname -s` =~ m{BSD}i;
+   return `uname -s` =~ "SunOS";
 }
 
 sub check_remote($$$$) {
@@ -53,12 +53,12 @@ sub check_remote($$$$) {
    }
 
    my %rc = %{ $session->execute_simple(
-         cmd => 'uname -s', timeout => 60, timeout_nodata => 30
+         cmd => '/usr/bin/uname -s', timeout => 60, timeout_nodata => 30
       )};
 
    $session->disconnect();
 
-   return $rc{stdout} =~ m{BSD}i;
+   return $rc{stdout} =~ "SunOS";
 }
 
 sub get_self_local {
@@ -73,7 +73,7 @@ sub get_self_local {
 
 # get ip configuration
    
-   chomp(my @self_addrs = `export LC_ALL=C LANG=C; /sbin/ifconfig -a 2>/dev/null |awk '!/127.[0-9]*.[0-9]*.[0-9]*/ && \$1=="inet"{print}'`);
+   chomp(my @self_addrs = `export LC_ALL=C LANG=C; /sbin/ifconfig -a 2>/dev/null |/usr/bin/awk '!/127.[0-9]*.[0-9]*.[0-9]*/ && \$1=="inet"{print}'`);
 
 # find all visible ips
    for (@self_addrs) {
@@ -82,7 +82,7 @@ sub get_self_local {
       ($ip, $mask) = m{inet ([\d.]+).*netmask ([^ ]+)}i unless $ip;
       next unless $ip;
 
-      chomp(my $MAC = `export LC_ALL=C LANG=C; ifconfig -a |grep -B1 '\\<$ip\\>' |awk 'NR==1{print \$NF}'`);
+      chomp(my $MAC = `export LC_ALL=C LANG=C; /sbin/ifconfig -a |/usr/sbin/arp -an |/usr/bin/grep " $ip " |/usr/bin/awk '{print \$NF}`);
       $mask = common->mask_to_ip($mask);
 
       $numerical_mask = common->ip_to_mask($mask);
@@ -94,7 +94,7 @@ sub get_self_local {
             $self{nmap_pres} = "0";
             my $test_ip = new Net::IP(new Net::Netmask("$ip/$numerical_mask")->base()."/".$numerical_mask);
             do {
-               system("ping -c 1 -W 1 ".$test_ip->ip()." >/dev/null &");
+               system("/usr/sbin/ping ".$test_ip->ip()." 1 >/dev/null &");
             } while (++$test_ip);
             sleep 5;
          }
@@ -115,14 +115,14 @@ sub get_self_local {
    }
    $self{own_ips} = \@own_ips_AoH;
 
-   for(`export LC_ALL=C LANG=C; arp -an |awk '!/incomplete/ {print \$1 " " \$3} |sed 's/[()]//g'`) {
+   for(`export LC_ALL=C LANG=C; /usr/sbin/arp -an |/usr/bin/awk '\$NF~/[a-f\\d:]/ && !/[MS]/ {print \$2 " " \$NF}'`) {
       /^([\d.]+) ([a-f:\d]+)\n?$/ && push @reachable_ips_AoH, { ip=>$1, mac=>$2 };
    }
 
    $self{reachable_ips} = \@reachable_ips_AoH;
 
 # determine routes
-   for(`export LC_ALL=C LANG=C; netstat -4rn |awk '\$3~/G/{print \$1" "\$2}'`) {
+   for(`export LC_ALL=C LANG=C; /usr/bin/netstat -rn |/usr/bin/awk '\$3~/G/{print \$1" "\$2}'`) {
       /([\d.]+)\/([\d]+) ([\d.]+)/ && push @routes_AoH, { network=>$1, mask=>common->ip_to_mask($2), host=>$3 };
    }
 
@@ -165,7 +165,7 @@ sub get_self_remote($$$$) {
 # get ip configuration
 
    %rc = %{ $session->execute_simple(
-         cmd => "export LC_ALL=C LANG=C; /sbin/ifconfig -a 2>/dev/null |awk '!/127.[0-9]*.[0-9]*.[0-9]*/ && \$1==\"inet\"{print}'", timeout => 60, timeout_nodata => 30
+         cmd => "export LC_ALL=C LANG=C; /sbin/ifconfig -a 2>/dev/null |/usr/bin/awk '!/127.[0-9]*.[0-9]*.[0-9]*/ && \$1==\"inet\"{print}'", timeout => 60, timeout_nodata => 30
       )};
 
    chomp(my @self_addrs = split '\n', $rc{stdout});
@@ -185,7 +185,7 @@ sub get_self_remote($$$$) {
       next unless $ip;
 
       %rc = %{ $session->execute_simple(
-            cmd => "export LC_ALL=C LANG=C; ifconfig -a |grep -B1 '\\<$ip\\>' |awk 'NR==1{print \$NF}'", timeout => 60, timeout_nodata => 30
+            cmd => "export LC_ALL=C LANG=C; /sbin/ifconfig -a |/usr/sbin/arp -an |/usr/bin/grep \" $ip \" |/usr/bin/awk '{print \$NF}'", timeout => 60, timeout_nodata => 30
          )};
       chomp(my $MAC = $rc{stdout});
 
@@ -201,7 +201,7 @@ sub get_self_remote($$$$) {
             $self{nmap_pres} = "0";
             my $ip_to_ping = new Net::IP(new Net::Netmask("$ip/$numerical_mask")->base()."/".$numerical_mask);
             do {
-               my $command_hash->{cmd} = ("ping -c 1 -W 1 ".$ip_to_ping->ip()." >/dev/null &");
+               my $command_hash->{cmd} = ("/usr/sbin/ping ".$ip_to_ping->ip()." 1 >/dev/null &");
                push @AoH, $command_hash;
             } while (++$ip_to_ping);
             $session->execute(commands => \@AoH, timeout => 10, timeout_nodata => 10, parallel => 5);
@@ -228,7 +228,7 @@ sub get_self_remote($$$$) {
    $self{own_ips} = \@own_ips_AoH;
 
    %rc = %{ $session->execute_simple(
-         cmd => "export LC_ALL=C LANG=C; arp -an |awk '!/incomplete/ {print \$2 \" \" \$4}' |sed 's/[()]//g'", timeout => 60, timeout_nodata => 30
+         cmd => "export LC_ALL=C LANG=C; /usr/sbin/arp -an |/usr/bin/awk '\$NF~/[a-f\\d:]/ && !/[MS]/ {print \$2 \" \" \$NF}'", timeout => 60, timeout_nodata => 30
       )};
    chomp(my @arp_output = split '\n', $rc{stdout});
    for(@arp_output) {
@@ -239,7 +239,7 @@ sub get_self_remote($$$$) {
 
 # determine routes
    %rc = %{ $session->execute_simple(
-         cmd => "export LC_ALL=C LANG=C; netstat -4rn |awk '\$3~/G/{print \$1\" \"\$2}'", timeout => 60, timeout_nodata => 30
+         cmd => "export LC_ALL=C LANG=C; /usr/bin/netstat -rn |/usr/bin/awk '\$3~/G/{print \$1\" \"\$2}'", timeout => 60, timeout_nodata => 30
       )};
    chomp(my @routes = split '\n', $rc{stdout});
    for(@routes) {

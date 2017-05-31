@@ -11,6 +11,11 @@ $HOSTS{"192.168.2.58"} = {
    password => 'changeme',
 };
 
+$HOSTS{"192.168.2.3"} = {
+   username => 'user',
+   password => 'pass',
+};
+
 $HOSTS{"192.168.2.173"} = {
    username => '',
    password => 'changeme',
