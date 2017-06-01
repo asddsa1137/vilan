@@ -90,8 +90,8 @@ sub get_self_local {
 # check for nmap presence and ping entire subnet
       chomp(my $nmap_pres = `which nmap`);
       if ($nmap_pres =~ "not found") {
+         $self{nmap_pres} = "0";
          if($numerical_mask ge 20) {
-            $self{nmap_pres} = "0";
             my $test_ip = new Net::IP(new Net::Netmask("$ip/$numerical_mask")->base()."/".$numerical_mask);
             do {
                system("ping -c 1 -W 1 ".$test_ip->ip()." >/dev/null &");
@@ -196,9 +196,9 @@ sub get_self_remote($$$$) {
       # ping entire subnet
       
       if ($nmap_pres eq "") {
+         $self{nmap_pres} = "0";
          if($numerical_mask ge 20) {
             my @AoH;
-            $self{nmap_pres} = "0";
             my $ip_to_ping = new Net::IP(new Net::Netmask("$ip/$numerical_mask")->base()."/".$numerical_mask);
             do {
                my $command_hash->{cmd} = ("ping -c 1 -W 1 ".$ip_to_ping->ip()." >/dev/null &");
