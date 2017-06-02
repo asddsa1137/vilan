@@ -48,7 +48,7 @@ sub new($$$$$) {
    eval "$_\->check_remote(\$target_ip, \$HOSTS)" and $prefix = $_ for (map { s,^\d+_,,r } keys %_modules);
    exit 2 unless $prefix;
 
-   print STDERR "I am remote $prefix !\n";
+   print STDERR "I am remote $prefix [$target_ip]!\n";
    %self = %{ eval "$prefix\->get_self_remote(\$target_ip, \$HOSTS)" };
    $self{lib_used} = $prefix;
 

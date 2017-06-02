@@ -71,7 +71,66 @@ unless (my $rc = do $config_file) {
 
 # test local linux_generic
 my $self = self->new();
-print Dumper($self);
+# print STDERR Dumper($self);
+
+my $own_ip = $self->{own_ips}->[0]->{ip} // die "Can't obtain self IP";
+if (1 < @{ $self->{own_ips} }) {
+   digraph->add_router(map { $_->{ip} } @{ $self->{own_ips} });
+} else {
+   my $ip = @{ $self->{own_ips} }[0]->{ip};
+   my $mask = common->ip_to_mask( @{ $self->{own_ips} }[0]->{mask} );
+   my $net = Net::Netmask->new("$ip/$mask")->base();
+   digraph->add_hosts_in_net("$net/$mask", $ip);
+}
+
+for (@{ $self->{own_ips} }) {
+   my @ips = ();
+   my $ip = $_->{ip};
+   my $mask = common->ip_to_mask( $_->{mask} );
+   my $net = Net::Netmask->new("$ip/$mask")->base();
+
+   for (@{ $self->{reachable_ips} }) {
+      my $remote_net = Net::Netmask->new("$_->{ip}/$mask")->base();
+      if ($net eq $remote_net) {
+         digraph->add_hosts_in_net("$net/$mask", $_->{ip});
+         $_->{net} = $net;
+         $_->{mask} = $mask;
+      }
+   }
+}
+
+for my $i (@{ $self->{reachable_ips} }){
+   my $ip = $i->{ip};
+
+   next unless defined $HOSTS{$ip};
+
+   my $remote = remote->new($ip, $HOSTS{$ip}->{username}, $HOSTS{$ip}->{password}, \%HOSTS);
+
+   # print STDERR Dumper($remote->{own_ips});
+   if (1 < @{ $remote->{own_ips} }) {
+      digraph->add_router(map { $_->{ip} } @{ $remote->{own_ips} });
+   }
+
+   for (@{ $remote->{own_ips} }) {
+      my $ip = $_->{ip};
+      my $mask = common->ip_to_mask( $_->{mask} );
+      my $net = Net::Netmask->new("$ip/$mask")->base();
+
+      for (@{ $remote->{reachable_ips} }) {
+         my $remote_net = Net::Netmask->new("$_->{ip}/$mask")->base();
+         if ($net eq $remote_net) {
+            digraph->add_hosts_in_net("$net/$mask", $_->{ip});
+            $_->{net} = $net;
+            $_->{mask} = $mask;
+         }
+      }
+
+   }
+}
+#digraph->add_gateway($_) for @{$self->{gws}};
+
+# print STDERR Dumper($self);
+digraph->print();
 
 # test remote cisco_generic
 #my $tmp_ip = "192.168.2.173";
@@ -93,7 +152,7 @@ print Dumper($self);
 #my $self_remote4 = remote->new($tmp_ip, $HOSTS{$tmp_ip}->{username}, $HOSTS{$tmp_ip}->{password}, \%HOSTS);
 #print Dumper($self_remote4);
 
-print "End of scan.\n";
+# print STDERR "End of scan.\n";
 
 =head1 FUNCTIONS
 

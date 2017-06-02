@@ -83,7 +83,12 @@ sub get_self_remote($$$$) {
       ++$ip_to_ping; # skip network address
 
       if($numerical_mask ge 20) {
-         $session->enable(Name => $HOSTS->{"$target_ip"}->{enable_user}, Password => $HOSTS->{"$target_ip"}->{enable_password});
+         $session->enable(Name => $HOSTS->{"$target_ip"}->{enable_user},
+            (defined $HOSTS->{"$target_ip"}->{enable_password} ?
+               (Password => $HOSTS->{"$target_ip"}->{enable_password}) :
+               ()
+            )
+         );
          if ($session->is_enabled) {
             print STDERR "Filling ARP table on Cisco [$ip]. It may take a while...\n";
             do {
